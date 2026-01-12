@@ -1,0 +1,410 @@
+I’ll draft a Codex-ready build spec for a self-hosted dark-mode app: key features, screens, data model, tech stack, error tracking, and annotated code conventions, plus DIM wishlist format rules.
+
+
+# Codex Build Instructions for a Self Hosted DIM Helper App
+
+---
+
+## What you are building
+
+You are building a self hosted web app that helps you:
+
+* Build DIM search strings fast, using presets and dropdowns
+* Save named favorites of those search strings
+* Track armor set completion with checkbox grids (like your sheet)
+* Build DIM wishlist files in the official DIM wishlist text format
+
+Relevant DIM docs:
+
+* DIM wishlist file format, notes, block notes, wildcard item ID, and trash list behavior are defined in the DIM wiki. ([GitHub][1])
+* DIM search language supports and, or, not, negation with -, and parentheses. Searches are limited to 2048 characters. ([GitHub][2])
+* DIM supports named queries by using a leading comment like `/* name */` in the query. ([GitHub][3])
+* DIM wishlists can be found via `is:wishlist`, and wishlist notes can be searched via `wishlistnotes:`. ([GitHub][4])
+
+---
+
+## Key product requirements you already gave
+
+* Dark mode only
+* Solid UI and UX
+* Settings screen for tweaks
+* Robust error tracking
+* Named favorites for sets of search strings, you can add more later
+* No login
+* Easy self hosting
+* Every code section includes commentary explaining intent and behavior
+
+---
+
+## Suggested build approach
+
+### Tech stack (simple to self host)
+
+* Frontend: Next.js (App Router) + React + TypeScript
+* UI: Tailwind + shadcn style components (dark mode tokens)
+* Data: SQLite + Prisma
+* Validation: Zod on both client and server
+* Packaging: Dockerfile + docker-compose
+* Logging: server structured logs + in app error log viewer
+
+Why this works for your use case:
+
+* No accounts needed, everything stored locally in SQLite
+* One container, easy to run anywhere
+* Easy export and import for backups and open source users
+
+---
+
+## Features and screens
+
+### 1) Search Builder
+
+You need a builder that outputs a single DIM search string.
+
+* Each row is a rule
+
+  * Prefix, like `exactperk:`, `is:`, `tertiarystat:`
+  * Value, from a dropdown or text entry
+  * Quote behavior
+
+    * Per rule: never, always, conditional
+    * Your current need maps to conditional quoting, where some fields require quotes and others do not
+* Output area
+
+  * Shows the final combined query
+  * Copy to clipboard button
+  * Optional toggle to include a leading `/* name */` comment for DIM named queries ([GitHub][3])
+* Exclusion logic
+
+  * Any rule with an empty value is excluded from output
+
+### 2) Preset Search Templates
+
+You need reusable templates that generate rule rows.
+
+* Template contains:
+
+  * Template name
+  * List of rules in order
+  * For each rule
+
+    * prefix
+    * input type (dropdown, multi-select, text, number range)
+    * options list if dropdown or multi-select
+    * requiresQuotes boolean
+* Example templates
+
+  * Armor cleanup templates
+  * Weapon cleanup templates
+  * Class specific templates
+
+### 3) Favorites Library
+
+You need a way to save what you built.
+
+* Save current state as a favorite:
+
+  * Name
+  * Description
+  * Tags (optional)
+  * Template used
+  * Selected values
+* Manage favorites:
+
+  * Rename
+  * Duplicate
+  * Delete
+  * Export and import JSON
+
+### 4) Armor Set Tracker
+
+You need the checkbox grid experience from your sheet, but configurable.
+
+Core idea:
+
+* You create a set, like “Paragon” or “Gunner”
+* Each set contains sections
+
+  * Section title
+  * Rows, like Helmet, Arms, Chest, Legs, Class Item
+  * Columns, like Grenade, Melee, Super, Class, Weapons
+* Each cell is a checkbox
+* You can also store optional notes per set and per row
+
+UX features that matter:
+
+* Quick add preset layouts for common set structures
+* Progress indicator per set
+* Filter to show incomplete sets
+
+### 5) DIM Wishlist Builder
+
+You need a UI that produces a `.txt` wishlist file that DIM can load.
+
+Wishlist format requirements from DIM wiki:
+
+* File supports optional `title:` and `description:` in the first lines ([GitHub][1])
+* Each roll line looks like `dimwishlist:item=1234&perks=456,567` ([GitHub][1])
+* Notes per line are appended as `#notes:` ([GitHub][1])
+* Block notes use `//notes:` and apply to following lines until closed ([GitHub][1])
+* Enhanced perks match when you pick the normal perk hash ([GitHub][1])
+* Wildcard item ID `-69420` applies perk matching across all items ([GitHub][1])
+* Only weapons are supported, masterworks, shaders, ornaments are not supported ([GitHub][1])
+* Trash lists use a negative item hash and can be searched in DIM via `is:trashlist` ([GitHub][1])
+
+Wishlist builder functions:
+
+* Add entry
+
+  * Item hash
+  * Perk hash list
+  * Notes
+  * Type toggle: wishlist or trashlist
+  * Optional: wildcard entry toggle to set item to `-69420`
+* Import helpers
+
+  * Paste a DIM wishlist line, parse it, and edit it
+  * Paste multiple lines, bulk import
+* Export
+
+  * Download `.txt`
+  * Copy to clipboard
+  * Save drafts in the app
+
+---
+
+## Settings
+
+Settings should be practical, not bloated.
+
+* Default template on launch
+* Default copy behavior
+
+  * Copy with named query comment on or off
+* Data management
+
+  * Export all data to JSON
+  * Import JSON
+  * Reset local database
+* Logging
+
+  * Toggle verbose logging
+  * Download error logs
+
+---
+
+## Error tracking and debugging
+
+You want robust tracking without requiring a hosted service.
+
+Implement:
+
+* Client error boundary capturing stack traces into an Errors table
+* Server request logging with request id
+* A Logs page that shows:
+
+  * Recent errors
+  * Filters by feature area
+  * Copy error details button
+* Optional integration toggle:
+
+  * If `SENTRY_DSN` exists, forward errors to Sentry
+  * Otherwise keep everything local
+
+---
+
+## Data model
+
+Use SQLite with Prisma models like:
+
+* SearchTemplate
+* SearchTemplateRule
+* FavoriteSearch
+* ArmorSet
+* ArmorSetSection
+* ArmorSetCell
+* WishlistFile
+* WishlistEntry
+* AppErrorLog
+
+Every record should have:
+
+* id
+* createdAt
+* updatedAt
+
+---
+
+## Self hosting
+
+Deliver:
+
+* Dockerfile
+* docker-compose.yml
+* .env.example
+* README with:
+
+  * Local dev steps
+  * Docker steps
+  * Backup and restore steps
+  * How to contribute
+
+---
+
+## Coding standards you want Codex to follow
+
+* TypeScript everywhere
+* Strong input validation with Zod
+* No silent failures
+* Every file starts with a short comment block describing:
+
+  * Purpose
+  * Key exports
+  * Any non obvious constraints
+* Every function has a doc comment describing:
+
+  * Why it exists
+  * Inputs and outputs
+  * Edge cases
+* Components have comments explaining:
+
+  * State ownership
+  * Why specific UI patterns were chosen
+
+---
+
+# Paste this into Codex
+
+```text
+Build a self-hosted web app called “DIM Vault Cleaner” that helps me generate DIM search queries, track armor sets with checkbox grids, and build DIM wishlist text files.
+
+Hard requirements
+- Dark mode only, modern UI, accessible contrast, keyboard friendly.
+- No user login. Single user local app.
+- Must be easy to self host. Provide Dockerfile and docker-compose.
+- Data must persist locally using SQLite.
+- Must include a Settings screen and an Error Logs screen.
+- Robust error tracking:
+  - Client error boundary stores errors to SQLite.
+  - Server logs requests with request id.
+  - Logs UI to view, filter, and copy error details.
+  - Optional Sentry if SENTRY_DSN exists, otherwise local only.
+- Favorites:
+  - Users can save named sets of search rules.
+  - Users can add new templates and favorites later.
+  - Export and import JSON backups.
+- All code must include commentary:
+  - File header comment for purpose.
+  - Doc comments for each function.
+  - Comments for non-obvious logic and UI decisions.
+
+App pages
+1) Search Builder
+- A template driven rules editor for DIM queries.
+- Each rule row:
+  - prefix (example exactperk:, is:, tertiarystat:)
+  - input type (dropdown, multiselect, text, number range)
+  - options list when applicable
+  - requiresQuotes boolean
+- Output:
+  - Build one query string by joining only non-empty rule values.
+  - Exclude empty rules from output.
+  - Copy to clipboard button.
+  - Optional toggle to include a leading DIM named-query comment like:
+    /* My Name */ <query>
+- Must support conditional quoting:
+  - Some rule values must be wrapped in double quotes.
+  - Others must not.
+  - This must be configurable per rule in the template editor.
+
+2) Templates and Favorites
+- Template Editor:
+  - Create and edit templates (name, list of rules, rule settings).
+- Favorites Library:
+  - Save current selections as a favorite.
+  - Rename, duplicate, delete favorites.
+  - Export and import favorites and templates as JSON.
+
+3) Armor Set Tracker
+- User can create “Armor Sets” with one or more sections.
+- Each section:
+  - Title
+  - Row labels (Helmet, Arms, Chest, Legs, Class Item, or custom)
+  - Column labels (Grenade, Melee, Super, Class, Weapons, or custom)
+- Render a checkbox grid of rows x columns.
+- Show completion percentage per set and per section.
+- Allow notes per set and per row.
+
+4) Wishlist Builder
+- Build DIM wishlist text files that follow the DIM wiki format:
+  - Optional title: and description: at top.
+  - Roll lines:
+    dimwishlist:item=ITEM_HASH&perks=PERK_HASH_1,PERK_HASH_2
+  - Notes per line using:
+    #notes:Some notes
+  - Block notes using:
+    //notes:Notes that apply to following lines
+  - Support wildcard item id:
+    item=-69420
+  - Support trashlist entries:
+    negative item hash and allow searching is:trashlist in DIM.
+- UI:
+  - Create a wishlist file draft
+  - Add entries with item hash, perk hash list, notes, and type toggle wishlist or trashlist
+  - Import by pasting one or many wishlist lines, parse them into entries
+  - Export by downloading a .txt file and by copying to clipboard
+
+Tech stack
+- Next.js App Router, React, TypeScript
+- Tailwind + a small component library approach for clean UI
+- Prisma + SQLite
+- Zod validation for API and forms
+- Structured logging
+
+Deliverables
+- Full source code with clear folder structure
+- Dockerfile and docker-compose
+- .env.example
+- README with:
+  - dev setup
+  - docker run steps
+  - backup and restore
+  - how to add new templates and favorites
+
+Acceptance tests
+- Search builder output excludes empty values and correctly quotes only rules configured to require quotes.
+- Favorites persist after restart.
+- Armor tracker checkboxes persist after restart.
+- Wishlist export matches the DIM text format and supports notes, block notes, wildcard, and trashlist.
+- Errors are captured and visible in the Logs page.
+```
+
+---
+
+## If you want, here is the first template you should implement
+
+* Template name: Armor Cleanup
+* Rules:
+
+  * is: (dropdown)
+  * exactperk: (dropdown, requiresQuotes true)
+  * exactperk: (dropdown, requiresQuotes true)
+  * tertiarystat: (dropdown, requiresQuotes false)
+  * stat: (range input, requiresQuotes false)
+  * -is: (dropdown, requiresQuotes false)
+
+You can expand from there fast.
+
+---
+
+## Related Records and Views
+
+* DIM Wiki, Creating Wish Lists ([GitHub][1])
+* DIM Wiki, Wish Lists ([GitHub][4])
+* DIM Wiki, Item Search ([GitHub][2])
+* DIM Wiki, Item Search Useful Queries ([GitHub][3])
+
+[1]: https://github.com/DestinyItemManager/DIM/wiki/Creating-Wish-Lists "Creating Wish Lists · DestinyItemManager/DIM Wiki · GitHub"
+[2]: https://github.com/DestinyItemManager/DIM/wiki/Item-Search "Item Search · DestinyItemManager/DIM Wiki · GitHub"
+[3]: https://github.com/DestinyItemManager/DIM/wiki/Item-Search-Useful-Queries "Item Search Useful Queries · DestinyItemManager/DIM Wiki · GitHub"
+[4]: https://github.com/DestinyItemManager/DIM/wiki/Wish-Lists "Wish Lists · DestinyItemManager/DIM Wiki · GitHub"
