@@ -1,0 +1,63 @@
+// Prisma schema for DIM Vault Toolkit persistent storage.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SearchTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  rules     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  favorites FavoriteSearch[]
+}
+
+model FavoriteSearch {
+  id         String         @id @default(cuid())
+  name       String
+  templateId String?
+  selections Json
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  template   SearchTemplate? @relation(fields: [templateId], references: [id])
+}
+
+model ArmorSet {
+  id        String   @id @default(cuid())
+  name      String
+  notes     String?
+  sections  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WishlistFile {
+  id          String   @id @default(cuid())
+  name        String
+  title       String?
+  description String?
+  entries     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AppErrorLog {
+  id        String   @id @default(cuid())
+  source    String
+  message   String
+  stack     String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model AppSetting {
+  id               String  @id @default("singleton")
+  defaultTemplateId String?
+  copyWithComment  Boolean @default(false)
+}

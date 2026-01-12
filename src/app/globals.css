@@ -1,0 +1,14 @@
+/*
+  Global styles and Tailwind base for the DIM Vault Toolkit theme.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100;
+}

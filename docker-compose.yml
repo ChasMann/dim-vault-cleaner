@@ -1,0 +1,13 @@
+# Docker Compose configuration for DIM Vault Toolkit.
+version: "3.9"
+services:
+  dim-vault-toolkit:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/app/prisma/dev.db"
+      SENTRY_DSN: "${SENTRY_DSN}"
+      NEXT_PUBLIC_SENTRY_DSN: "${NEXT_PUBLIC_SENTRY_DSN}"
+    volumes:
+      - ./prisma:/app/prisma
